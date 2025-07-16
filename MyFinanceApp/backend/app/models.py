@@ -15,3 +15,10 @@ class Transaction(Base):
     type = Column(String(10))  # 'income' or 'expense'
     account = Column(String(255))
 
+class Account(Base):
+    __tablename__ = 'accounts'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(255), nullable=False)
+    starting_balance = Column(Float, nullable=False)
+
