@@ -18,7 +18,7 @@ class Transaction(Base):
 class Account(Base):
     __tablename__ = 'accounts'
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False)
     starting_balance = Column(Float, nullable=False)
 

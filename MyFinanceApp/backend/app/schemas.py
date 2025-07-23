@@ -1,26 +1,17 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
-class Account(BaseModel):
+class AccountBase(BaseModel):
+    name: str
+    starting_balance: float
+
+class AccountCreate(AccountBase):
+    pass
+
+class AccountUpdate(AccountBase):
+    pass
+
+class AccountRead(AccountBase):
     id: int
-    name: str
-    starting_balance: float
 
-    class Config:
-        orm_mode = True
-
-class AccountCreate(BaseModel):
-    name: str
-    starting_balance: float
-
-class AccountUpdate(BaseModel):
-    name: str
-    starting_balance: float
-
-class AccountRead(BaseModel):
-    id: int
-    name: str
-    starting_balance: float
-
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
