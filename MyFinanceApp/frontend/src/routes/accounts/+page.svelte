@@ -1,63 +1,64 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { getAllAccounts, createAccount, updateAccount } from '$lib/api';
 
-  interface Account {
-    id: number;
-    name: string;
-    starting_balance: number;
-  }
-
+  // Form state
   let name = '';
   let startingBalance: number = 0;
   let successMessage = '';
   let errorMessage = '';
+
+  // List state
+  type Account = {
+    id: number;
+    name: string;
+    starting_balance: number;
+  };
+
   let accounts: Account[] = [];
-  let savingIds = new Set<number>();
 
-  onMount(async () => {
-    try {
-      accounts = await getAllAccounts();
-    } catch (err) {
-      errorMessage = 'Error fetching accounts';
-      console.error(err);
-    }
-  });
-
+  // Create new account
   async function handleSubmit() {
     successMessage = '';
     errorMessage = '';
 
     try {
-      const result = await createAccount(name, startingBalance);
-      successMessage = `Account "${result.name}" created!`;
+      const res = await fetch('http://localhost:8000/accounts/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name,
+          starting_balance: startingBalance,
+        }),
+      });
+
+      if (!res.ok) throw new Error('Failed to create account');
+
+      const newAccount = await res.json();
+      successMessage = `Account "${newAccount.name}" created!`;
       name = '';
       startingBalance = 0;
-      accounts = [...accounts, result]; // Add to list
+
+      // Refresh list
+      accounts = [...accounts, newAccount];
     } catch (err) {
       errorMessage = err.message;
     }
   }
 
-  async function handleInputChange(account: Account, field: 'name' | 'starting_balance', value: string | number) {
-    account[field] = field === 'starting_balance' ? parseFloat(value as string) : (value as string);
-  }
-
-  async function saveAccount(account: Account) {
-    savingIds.add(account.id);
-    successMessage = '';
-    errorMessage = '';
-
+  // Fetch existing accounts
+  async function fetchAccounts() {
     try {
-      const updated = await updateAccount(account.id, account.name, account.starting_balance);
-      accounts = accounts.map(a => (a.id === updated.id ? updated : a));
-      successMessage = `Account "${updated.name}" saved successfully!`;
+      const res = await fetch('http://localhost:8000/accounts/');
+      if (!res.ok) throw new Error('Failed to fetch accounts');
+      accounts = await res.json();
     } catch (err) {
       errorMessage = err.message;
-    } finally {
-      savingIds.delete(account.id);
     }
   }
+
+  onMount(fetchAccounts);
 </script>
 
 <h1>Create a New Account</h1>
@@ -84,28 +85,21 @@
   <p class="error">{errorMessage}</p>
 {/if}
 
-<h1>Your Accounts</h1>
+<hr />
 
-<ul>
-  {#each accounts as account (account.id)}
-    <li>
-      <input
-        type="text"
-        bind:value={account.name}
-        on:input={(e) => handleInputChange(account, 'name', e.target.value)}
-      />
-      <input
-        type="number"
-        step="0.01"
-        bind:value={account.starting_balance}
-        on:input={(e) => handleInputChange(account, 'starting_balance', e.target.value)}
-      />
-      <button on:click={() => saveAccount(account)} disabled={savingIds.has(account.id)}>
-        {savingIds.has(account.id) ? 'Saving...' : 'Save'}
-      </button>
-    </li>
-  {/each}
-</ul>
+<h2>All Accounts</h2>
+
+{#if accounts.length === 0}
+  <p>No accounts found.</p>
+{:else}
+  <ul>
+    {#each accounts as account}
+      <li>
+        <strong>{account.name}</strong>: ${account.starting_balance.toFixed(2)}
+      </li>
+    {/each}
+  </ul>
+{/if}
 
 <style>
   .account-form {
@@ -118,12 +112,29 @@
     margin-bottom: 1em;
   }
 
+  button {
+    margin-top: 0.5em;
+  }
+
   .success {
     color: green;
   }
 
   .error {
     color: red;
+  }
+
+  ul {
+    list-style-type: none;
+    padding-left: 0;
+  }
+
+  li {
+    margin: 0.5em 0;
+  }
+
+  hr {
+    margin: 2em 0;
   }
 </style>
 

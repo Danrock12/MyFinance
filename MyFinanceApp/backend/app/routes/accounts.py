@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.db import get_db
-from app.models import Account as AccountModel
-from app.schemas import AccountCreate, AccountUpdate, AccountRead
+from app.models import Account as AccountModel   # SQLAlchemy model
+from app.schemas import AccountCreate, AccountUpdate, AccountRead  # Pydantic schemas
 
 router = APIRouter()
 
