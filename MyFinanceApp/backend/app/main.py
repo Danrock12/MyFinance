@@ -1,8 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes import accounts
-from app.models import Base
-from app.db import engine
+from app.routes import accounts, transactions
 
 app = FastAPI()
 
@@ -14,12 +12,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(accounts.router, prefix="/accounts")
-
-@app.on_event("startup")
-def on_startup():
-    # Create tables if they don't exist
-    Base.metadata.create_all(bind=engine)
+app.include_router(accounts.router, prefix="/accounts", tags=["accounts"])
+app.include_router(transactions.router, prefix="/transactions", tags=["transactions"])
 
 @app.get("/")
 async def root():

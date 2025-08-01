@@ -1,25 +1,44 @@
 <script>
-  import { page } from '$app/stores';
+  import Accounts from '$lib/Accounts.svelte';
+  import Transactions from '$lib/Transactions.svelte';
+
+  let activeTab = 'accounts'; // default tab
+
+  function selectTab(tab) {
+    activeTab = tab;
+  }
 </script>
 
 <nav>
-  <a href="/" class:active={$page.url.pathname === '/'}>Home</a>
-  <a href="/transactions" class:active={$page.url.pathname === '/transactions'}>Transactions</a>
-  <a href="/accounts" class:active={$page.url.pathname === '/accounts'}>Accounts</a>
+  <button
+    on:click={() => selectTab('accounts')}
+    class:selected={activeTab === 'accounts'}
+  >
+    Accounts
+  </button>
+  <button
+    on:click={() => selectTab('transactions')}
+    class:selected={activeTab === 'transactions'}
+  >
+    Transactions
+  </button>
 </nav>
 
 <style>
-  nav a {
-    margin-right: 1rem;
-    text-decoration: none;
-    color: black;
-  }
-  .active {
+  button.selected {
     font-weight: bold;
-    color: blue;
+    border-bottom: 2px solid blue;
+  }
+  nav {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
   }
 </style>
 
-<h1>Welcome to your Finance App</h1>
-<p>Select a tab to get started:</p>
+{#if activeTab === 'accounts'}
+  <Accounts />
+{:else if activeTab === 'transactions'}
+  <Transactions />
+{/if}
 
