@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app import models, schemas
-from app.database import get_db
+from app.db import get_db  # <-- Corrected import
 from app.models import Transaction, Account
 
 router = APIRouter(tags=["transactions"])  # Prefix handled in main.py
@@ -80,4 +80,3 @@ def delete_transaction(transaction_id: int, db: Session = Depends(get_db)):
     db.commit()
 
     return {"message": "Transaction deleted and balances updated"}
-
