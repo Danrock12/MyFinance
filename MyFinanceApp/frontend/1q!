@@ -1,0 +1,80 @@
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import { Chart, registerables } from 'chart.js';
+
+  export let transactions: {
+    date: string;
+    amount: number;
+    type: 'income' | 'expense';
+  }[];
+
+  let canvas: HTMLCanvasElement;
+  let chart: Chart;
+
+  onMount(() => {
+    Chart.register(...registerables);
+
+    const incomeMap = new Map<string, number>();
+    const expenseMap = new Map<string, number>();
+
+    for (const tx of transactions) {
+      const date = tx.date.slice(0, 7); // YYYY-MM
+      if (tx.type === 'income') {
+        incomeMap.set(date, (incomeMap.get(date) ?? 0) + tx.amount);
+      } else if (tx.type === 'expense') {
+        expenseMap.set(date, (expenseMap.get(date) ?? 0) + tx.amount);
+      }
+    }
+
+    const months = Array.from(new Set([...incomeMap.keys(), ...expenseMap.keys()])).sort();
+
+    const incomeData = months.map(m => incomeMap.get(m) ?? 0);
+    const expenseData = months.map(m => expenseMap.get(m) ?? 0);
+
+    chart = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: months,
+        datasets: [
+          {
+            label: 'Income',
+            data: incomeData,
+            backgroundColor: 'rgba(75, 192, 192, 0.5)',
+            borderColor: 'rgba(75, 192, 192, 1)',
+            borderWidth: 1,
+          },
+          {
+            label: 'Expenses',
+            data: expenseData,
+            backgroundColor: 'rgba(255, 99, 132, 0.5)',
+            borderColor: 'rgba(255, 99, 132, 1)',
+            borderWidth: 1,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'top' },
+          title: { display: true, text: 'Monthly Income vs Expenses' },
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: (val) => `$${val}`,
+            },
+          },
+        },
+      },
+    });
+  });
+
+  // Optional cleanup
+  onDestroy(() => {
+    chart?.destroy();
+  });
+</script>
+
+<canvas bind:this={canvas}></canvas>
+
