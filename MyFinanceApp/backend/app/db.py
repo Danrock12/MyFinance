@@ -12,11 +12,6 @@ DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_HOST = os.getenv("DB_HOST")
 DB_NAME = os.getenv("DB_NAME")
 
-print("DB_USER:", DB_USER)
-print("DB_PASSWORD:", DB_PASSWORD)
-print("DB_HOST:", DB_HOST)
-print("DB_NAME:", DB_NAME)
-
 # Check for missing env vars
 if not all([DB_USER, DB_PASSWORD, DB_HOST, DB_NAME]):
     raise ValueError("Database credentials are not fully set in the environment variables.")

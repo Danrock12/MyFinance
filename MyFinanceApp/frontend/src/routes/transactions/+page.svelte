@@ -319,13 +319,24 @@
 
   .transaction-table th,
   .transaction-table td {
-    border: 1px solid #ccc;
+    border: 1px solid var(--border);
     padding: 0.5em 1em;
     text-align: left;
+    background: var(--card);
+    color: var(--foreground);
   }
 
   .transaction-table th {
-    background-color: #eee;
+    background: #fdfdfdb6;
+    color: #000000;
+    font-weight: 600;
+  }
+
+  .transaction-table tr:nth-child(even) td {
+    background: #23272f;
+  }
+
+  .transaction-table tr:hover td {
+    background: #282c34;
   }
 </style>
-
