@@ -6,12 +6,12 @@ from dotenv import load_dotenv
 # Load environment variables from a .env file (if present)
 load_dotenv()
 
-DB_USERNAME = os.getenv("DB_USERNAME")
+DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_HOST = os.getenv("DB_HOST", "localhost")  # default localhost if not set
 DB_NAME = os.getenv("DB_NAME")
 
-SQLALCHEMY_DATABASE_URL = f"mysql+pymysql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
+SQLALCHEMY_DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
 
 # Create SQLAlchemy engine
 engine = create_engine(SQLALCHEMY_DATABASE_URL, echo=True, future=True)
