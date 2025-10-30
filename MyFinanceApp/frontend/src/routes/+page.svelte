@@ -65,5 +65,8 @@
     <a href="/transactions" class="box">
       Transactions
     </a>
+    <a href="/financial-report" class="box">
+      Financial Report
+    </a>
   </div>
 </div>
