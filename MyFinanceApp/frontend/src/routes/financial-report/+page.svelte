@@ -1,7 +1,7 @@
 <script lang="ts">
   import { formatMoney } from '$lib/formatMoney';
 
-  export let transactions: Array<{ date: string; amount: number; type: 'income' | 'expense' | 'transfer' }>;
+  export let transactions: Array<{ date: string; amount: number; type: 'income' | 'expense' | 'transfer' }> = [];
   export let initialBalance: number = 0; // Set this to your actual starting balance
 
   // Group transactions by month

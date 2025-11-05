@@ -3,7 +3,7 @@
 
   export let report: {
     account_name: string;
-    monthly_balances: Record<number, number>;
+    monthly_balances: number[];
   }[] = [];
 
   export let totals: { monthly: number[] } = { monthly: [] };

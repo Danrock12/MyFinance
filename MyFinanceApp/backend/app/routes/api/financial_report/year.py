@@ -38,10 +38,6 @@ async def get_report(year: int, db: Session = Depends(get_db)):
             if txn.transfer_to_account_id:
                 monthly_data[txn.transfer_to_account_id][month_idx] += txn.amount
 
-    # Debug: print transaction dates and month indices
-    for txn in transactions:
-        print(f"Transaction {txn.id}: {txn.date} (month_idx={txn.date.month - 1})")
-
     # Build cumulative balances per account
     report = []
     for account in accounts:

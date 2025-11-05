@@ -77,7 +77,15 @@
       const monthIdx = new Date().getMonth();
       accountTotals = {};
       for (const acc of data.report) {
-        accountTotals[acc.account_name] = acc.monthly_balances[monthIdx];
+        let balance: number = 0;
+        if (Array.isArray(acc.monthly_balances)) {
+          if (monthIdx >= 0 && monthIdx < acc.monthly_balances.length) {
+            balance = acc.monthly_balances[monthIdx] ?? 0;
+          }
+        } else if (typeof acc.monthly_balances === 'object' && acc.monthly_balances !== null) {
+          balance = acc.monthly_balances[monthIdx] ?? 0;
+        }
+        accountTotals[acc.account_name] = balance;
       }
     } catch (err) {
       // Silently fail for overview
