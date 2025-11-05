@@ -26,7 +26,6 @@ async def get_report(year: int, db: Session = Depends(get_db)):
     # Process each transaction
     for txn in transactions:
         month_idx = txn.date.month - 1
-
         if txn.type == "income":
             monthly_data[txn.account_id][month_idx] += txn.amount
         elif txn.type == "expense":
@@ -39,25 +38,34 @@ async def get_report(year: int, db: Session = Depends(get_db)):
             if txn.transfer_to_account_id:
                 monthly_data[txn.transfer_to_account_id][month_idx] += txn.amount
 
+    # Debug: print transaction dates and month indices
+    for txn in transactions:
+        print(f"Transaction {txn.id}: {txn.date} (month_idx={txn.date.month - 1})")
+
     # Build cumulative balances per account
     report = []
     for account in accounts:
         start = starting_balances.get(account.id, 0.0)
         running_total = start
         monthly_balances = []
-
-        for delta in monthly_data[account.id]:
-            running_total += delta
+        for i in range(12):
+            running_total += monthly_data[account.id][i]
             monthly_balances.append(round(running_total, 2))
-
         report.append({
-            "account": account.name,
-            "start": round(start, 2),
+            "account_name": account.name,
             "monthly_balances": monthly_balances
         })
+
+    # Compute totals for each month across all accounts
+    totals = {
+        "monthly": [
+            round(sum(acc["monthly_balances"][i] for acc in report), 2)
+            for i in range(12)
+        ]
+    }
 
     return {
         "year": year,
         "report": report,
-        "totals": {}  # Add overall totals if desired
+        "totals": totals
     }

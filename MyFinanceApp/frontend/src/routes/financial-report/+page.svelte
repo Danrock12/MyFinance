@@ -1,88 +1,73 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { formatMoney } from '$lib/formatMoney';
 
-  let report: {
-    account_name: string;
-    start: number;
-    monthly: number[];
-  }[] = [];
+  export let transactions: Array<{ date: string; amount: number; type: 'income' | 'expense' | 'transfer' }>;
+  export let initialBalance: number = 0; // Set this to your actual starting balance
 
-  let totals = { start: 0, monthly: [] as number[] };
-
-  const START_YEAR = 2025;
-  const currentYear = new Date().getFullYear();
-
-  let selectedYear = currentYear;
-
-  const years = Array.from({ length: currentYear - START_YEAR + 1 }, (_, i) => START_YEAR + i);
-
-  const months = [
-    'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
-    'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'
-  ];
-
-  function format(val: number) {
-    return `$${val?.toFixed(2)}`;
-  }
-
-  async function loadReport(year: number) {
-    try {
-      const res = await fetch(`/api/financial-report/${year}`);
-      if (!res.ok) throw new Error(`Failed to fetch for ${year}: ${res.statusText}`);
-      const data = await res.json();
-      report = data.report;
-      totals = data.totals;
-    } catch (e) {
-      console.error(e);
-      report = [];
-      totals = { start: 0, monthly: [] };
+  // Group transactions by month
+  function groupByMonth(transactions) {
+    const months = {};
+    for (const tx of transactions) {
+      const month = tx.date.slice(0, 7); // 'YYYY-MM'
+      if (!months[month]) months[month] = [];
+      months[month].push(tx);
     }
+    return months;
   }
 
-  $: if (selectedYear) {
-    loadReport(selectedYear);
+  const months = groupByMonth(transactions);
+  const sortedMonths = Object.keys(months).sort();
+
+  let monthlyRows = [];
+  let lastEndingBalance = initialBalance;
+
+  for (const month of sortedMonths) {
+    const txs = months[month];
+    let monthlyChange = 0;
+    for (const tx of txs) {
+      if (tx.type === 'income') monthlyChange += tx.amount;
+      else if (tx.type === 'expense') monthlyChange -= tx.amount;
+      // You can handle 'transfer' type as needed
+    }
+    const endBalance = lastEndingBalance + monthlyChange;
+    monthlyRows.push({ month, monthlyChange, endBalance });
+    lastEndingBalance = endBalance;
   }
+
+  // Calculate totals for the bottom row
+  let totalChange = monthlyRows.reduce((sum, row) => sum + row.monthlyChange, 0);
+  let totalEndBalance = monthlyRows.length > 0 ? monthlyRows[monthlyRows.length - 1].endBalance : initialBalance;
 </script>
 
-<h1 class="text-2xl font-bold mb-4">Financial Report</h1>
-
-<div class="mb-4">
-  <label for="year" class="mr-2 font-medium">Year:</label>
-  <select id="year" bind:value={selectedYear} class="border px-2 py-1">
-    {#each years as y}
-      <option value={y}>{y}</option>
-    {/each}
-  </select>
-</div>
-
-<table class="table-auto w-full border-collapse text-sm">
+<h1>Financial Report</h1>
+<table>
   <thead>
-    <tr class="bg-gray-200">
-      <th class="px-3 py-2 border">ACCOUNT</th>
-      <th class="px-3 py-2 border">START</th>
-      {#each months as month}
-        <th class="px-3 py-2 border">{month}</th>
-      {/each}
+    <tr>
+      <th>Month</th>
+      <th>Monthly Change</th>
+      <th>End Balance</th>
     </tr>
   </thead>
   <tbody>
-    {#each report as row}
+    {#each monthlyRows as row}
       <tr>
-        <td class="border px-2 py-1">{row.account_name}</td>
-        <td class="border px-2 py-1">{format(row.start)}</td>
-        {#each row.monthly as val}
-          <td class="border px-2 py-1">{format(val)}</td>
-        {/each}
+        <td>{row.month}</td>
+        <td>{formatMoney(row.monthlyChange)}</td>
+        <td>{formatMoney(row.endBalance)}</td>
       </tr>
     {/each}
   </tbody>
   <tfoot>
-    <tr class="font-bold bg-gray-100 border-t">
-      <td class="border px-2 py-1">TOTAL</td>
-      <td class="border px-2 py-1">{format(totals.start)}</td>
-      {#each totals.monthly as total}
-        <td class="border px-2 py-1">{format(total)}</td>
-      {/each}
+    <tr class="total-row">
+      <td>Total</td>
+      <td>{formatMoney(totalChange)}</td>
+      <td>{formatMoney(totalEndBalance)}</td>
     </tr>
   </tfoot>
 </table>
+<style>
+  hr {
+    margin: 2em 0;
+    border-color: var(--border);
+  }
+</style>

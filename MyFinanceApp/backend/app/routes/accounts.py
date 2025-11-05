@@ -29,3 +29,11 @@ def update_account(account_id: int, update: AccountUpdate, db: Session = Depends
     db.refresh(db_account)
     return db_account
 
+@router.delete("/{account_id}")
+def delete_account(account_id: int, db: Session = Depends(get_db)):
+    db_account = db.query(AccountModel).filter(AccountModel.id == account_id).first()
+    if db_account is None:
+        raise HTTPException(status_code=404, detail="Account not found")
+    db.delete(db_account)
+    db.commit()
+    return {"message": "Account deleted"}

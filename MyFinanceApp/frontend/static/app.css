@@ -5,6 +5,7 @@
   --card: #23272f;
   --border: #282c34;
   --header: #1b5e20; /* dark green for table headers */
+  --footer: #1b5e20; /* dark green for table footers */
 }
 
 body {
@@ -75,4 +76,11 @@ tr:nth-child(even) td {
 
 tr:hover td {
   background: #282c34;
+}
+
+tfoot tr.total-row td,
+tr.total-row td {
+background: var(--header) !important;
+color: #fff !important;
+font-weight: bold !important;
 }
