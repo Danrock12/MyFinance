@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { formatMoney } from '$lib/formatMoney';
 
   type Transaction = {
     id: number;
@@ -218,7 +219,7 @@
 <ul>
   {#each filteredTransactions as tx}
     <li>
-      <strong>{tx.date}</strong> / {tx.name} / {tx.tag} / {tx.type.charAt(0).toUpperCase() + tx.type.slice(1)} / ${tx.amount.toFixed(2)} /
+      <strong>{tx.date}</strong> / {tx.name} / {tx.tag} / {tx.type.charAt(0).toUpperCase() + tx.type.slice(1)} / {formatMoney(tx.amount)} /
       {#if tx.credit_card_used}
         Credit Card ({tx.credit_card_name})
       {:else if tx.type === 'transfer'}
@@ -259,7 +260,7 @@
             font-style: {tx.type === 'transfer' ? 'italic' : 'normal'};
           "
         >
-          ${tx.amount.toFixed(2)}
+          {formatMoney(tx.amount)}
         </td>
         <td>
           {#if tx.credit_card_used}

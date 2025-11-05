@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { formatMoney } from '$lib/formatMoney';
 
   // Form state
   let name = '';
@@ -15,6 +16,14 @@
   };
 
   let accounts: Account[] = [];
+
+  // Edit state
+  let editingAccount: Account | null = null;
+  let editBalance: number = 0;
+
+  // Overview state
+  let accountTotals: Record<string, number> = {};
+  let overviewDate: string = new Date().toLocaleDateString();
 
   // Create new account
   async function handleSubmit() {
@@ -40,8 +49,8 @@
       name = '';
       startingBalance = 0;
 
-      // Refresh list
-      accounts = [...accounts, newAccount];
+      await fetchAccounts();
+      await fetchAccountTotals();
     } catch (err) {
       errorMessage = err.message;
     }
@@ -58,7 +67,80 @@
     }
   }
 
-  onMount(fetchAccounts);
+  // Fetch financial report for overview
+  async function fetchAccountTotals() {
+    try {
+      const year = new Date().getFullYear();
+      const res = await fetch(`http://localhost:8000/api/financial-report/${year}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const monthIdx = new Date().getMonth();
+      accountTotals = {};
+      for (const acc of data.report) {
+        let balance: number = 0;
+        if (Array.isArray(acc.monthly_balances)) {
+          if (monthIdx >= 0 && monthIdx < acc.monthly_balances.length) {
+            balance = acc.monthly_balances[monthIdx] ?? 0;
+          }
+        } else if (typeof acc.monthly_balances === 'object' && acc.monthly_balances !== null) {
+          balance = acc.monthly_balances[monthIdx] ?? 0;
+        }
+        accountTotals[acc.account_name] = balance;
+      }
+    } catch (err) {
+      // Silently fail for overview
+    }
+  }
+
+  // Start editing
+  function startEdit(account: Account) {
+    editingAccount = account;
+    editBalance = account.starting_balance;
+  }
+
+  // Edit handler
+  async function handleEdit() {
+    if (!editingAccount) return;
+    try {
+      const res = await fetch(`http://localhost:8000/accounts/${editingAccount.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editingAccount.name,
+          starting_balance: editBalance,
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to update account');
+      await fetchAccounts();
+      await fetchAccountTotals();
+      editingAccount = null;
+      successMessage = 'Account updated!';
+    } catch (err) {
+      errorMessage = err.message;
+    }
+  }
+
+  // Delete handler
+  async function handleDelete(accountId: number) {
+    const confirmed = confirm('Are you sure you want to delete this account?');
+    if (!confirmed) return;
+    try {
+      const res = await fetch(`http://localhost:8000/accounts/${accountId}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error('Failed to delete account');
+      await fetchAccounts();
+      await fetchAccountTotals();
+      successMessage = 'Account deleted!';
+    } catch (err) {
+      errorMessage = err.message;
+    }
+  }
+
+  onMount(async () => {
+    await fetchAccounts();
+    await fetchAccountTotals();
+  });
 </script>
 
 <h1>Create a New Account</h1>
@@ -77,6 +159,17 @@
   <button type="submit">Create Account</button>
 </form>
 
+{#if editingAccount}
+  <form on:submit|preventDefault={handleEdit} class="account-form">
+    <label>
+      Edit Balance for {editingAccount.name}:
+      <input type="number" bind:value={editBalance} required step="0.01" />
+    </label>
+    <button type="submit">Save</button>
+    <button type="button" on:click={() => editingAccount = null}>Cancel</button>
+  </form>
+{/if}
+
 {#if successMessage}
   <p class="success">{successMessage}</p>
 {/if}
@@ -87,7 +180,23 @@
 
 <hr />
 
-<h2>All Accounts</h2>
+<h2>Account Overview (as of {overviewDate})</h2>
+<ul>
+  {#each accounts as account}
+    <li>
+      <strong>{account.name}</strong>:
+      {#if accountTotals[account.name] !== undefined}
+        {formatMoney(accountTotals[account.name])}
+      {:else}
+        Loading...
+      {/if}
+    </li>
+  {/each}
+</ul>
+
+<hr />
+
+<h2>Accounts Starting Balances</h2>
 
 {#if accounts.length === 0}
   <p>No accounts found.</p>
@@ -95,7 +204,9 @@
   <ul>
     {#each accounts as account}
       <li>
-        <strong>{account.name}</strong>: ${account.starting_balance.toFixed(2)}
+        <strong>{account.name}</strong>: {formatMoney(account.starting_balance)}
+        <button on:click={() => startEdit(account)}>Edit</button>
+        <button on:click={() => handleDelete(account.id)}>Delete</button>
       </li>
     {/each}
   </ul>
@@ -118,25 +229,26 @@
     margin-bottom: 1em;
   }
 
-input[type="text"],
-input[type="number"] {
-  background: var(--background);
-  color: var(--foreground);
-  border: 2px solid #1b5e20; /* green outline */
-  border-radius: 6px;
-  padding: 0.5em;
-  font-size: 1em;
-  outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
+  input[type="text"],
+  input[type="number"] {
+    background: var(--background);
+    color: var(--foreground);
+    border: 2px solid #1b5e20; /* green outline */
+    border-radius: 6px;
+    padding: 0.5em;
+    font-size: 1em;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
 
-input[type="text"]:focus,
-input[type="number"]:focus {
-  border-color: #4caf50; /* lighter green on focus */
-  box-shadow: 0 0 0 2px #4caf50;
-}
+  input[type="text"]:focus,
+  input[type="number"]:focus {
+    border-color: #4caf50; /* lighter green on focus */
+    box-shadow: 0 0 0 2px #4caf50;
+  }
 
   button {
+    margin-left: 0.5em;
     margin-top: 0.5em;
     background: #1b5e20;
     color: #fff;

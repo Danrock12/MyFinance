@@ -1,17 +1,13 @@
-<script lang="ts" context="module">
-  export const prerender = false; // If you want dynamic data always
-</script>
-
 <script lang="ts">
+  import { formatMoney } from '$lib/formatMoney';
+
   export let report: {
     account_name: string;
-    monthly_balances: Record<number, number>;
+    monthly_balances: number[];
   }[] = [];
 
-  export let totals: { start: number; monthly: number[] } = { start: 0, monthly: [] };
+  export let totals: { monthly: number[] } = { monthly: [] };
   export let year: number;
-
-  import { onMount } from 'svelte';
 
   const START_YEAR = 2025;
   const currentYear = new Date().getFullYear();
@@ -25,23 +21,22 @@
     'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'
   ];
 
-  function format(val: number) {
-    return `$${val?.toFixed(2)}`;
-  }
+  // Get current month index (0-based)
+  const currentMonthIdx = new Date().getMonth();
 
-  // Optional: client side load on year change
+  // Optional: client side load on year change 
   async function loadReport(selectedYear: number) {
     try {
       const res = await fetch(`http://localhost:8000/api/financial-report/${selectedYear}`);
       if (!res.ok) throw new Error(`Failed to load report: ${res.status}`);
       const data = await res.json();
       report = data.report;
-      totals = data.totals || { start: 0, monthly: [] };
+      totals = data.totals || { monthly: [] };
       year = selectedYear;
     } catch (e) {
       console.error(e);
       report = [];
-      totals = { start: 0, monthly: [] };
+      totals = { monthly: [] };
     }
   }
 
@@ -68,7 +63,6 @@
     <thead>
       <tr class="bg-gray-200">
         <th class="border px-3 py-2">ACCOUNT</th>
-        <th class="border px-3 py-2">START</th>
         {#each months as month}
           <th class="border px-3 py-2">{month}</th>
         {/each}
@@ -78,21 +72,27 @@
       {#each report as row}
         <tr>
           <td class="border px-2 py-1">{row.account_name}</td>
-          <td class="border px-2 py-1">{format(row.monthly_balances[1] ?? 0)}</td>
-          {#each months.map((_, i) => row.monthly_balances[i + 1] ?? 0) as val}
-            <td class="border px-2 py-1">{format(val)}</td>
+          {#each months as _, i}
+            <td class="border px-2 py-1">
+              {i <= currentMonthIdx
+                ? formatMoney(row.monthly_balances[i] ?? 0)
+                : ''}
+            </td>
           {/each}
         </tr>
       {/each}
     </tbody>
     <tfoot>
-      <tr class="font-bold bg-gray-100 border-t">
+      <tr class="total-row">
         <td class="border px-2 py-1">TOTAL</td>
-        <td class="border px-2 py-1">{format(totals.start ?? 0)}</td>
-        {#each totals.monthly ?? [] as total}
-          <td class="border px-2 py-1">{format(total)}</td>
+        {#each totals.monthly.slice(0, months.length) as total, i}
+          <td class="border px-2 py-1">
+            {i <= currentMonthIdx
+              ? formatMoney(total)
+              : ''}
+          </td>
         {/each}
       </tr>
     </tfoot>
   </table>
-{/if}
+  {/if}

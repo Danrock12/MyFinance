@@ -1,5 +1,7 @@
 import type { PageLoad } from './$types';
 
+export const prerender = false;
+
 export const load: PageLoad = async ({ fetch, params }) => {
   const yearParam = params.year;
   const year = Number(yearParam) || new Date().getFullYear();
@@ -12,7 +14,7 @@ export const load: PageLoad = async ({ fetch, params }) => {
   if (!res.ok) {
     return {
       report: [],
-      totals: { start: 0, monthly: [] },
+      totals: { monthly: [] },
       year,
     };
   }
@@ -21,7 +23,7 @@ export const load: PageLoad = async ({ fetch, params }) => {
 
   return {
     report: data.report || [],
-    totals: data.totals || { start: 0, monthly: [] },
+    totals: data.totals || { monthly: [] },
     year,
   };
 };
